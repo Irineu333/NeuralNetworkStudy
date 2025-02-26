@@ -7,7 +7,7 @@ class NeuronTest {
     private lateinit var neuron: Neuron
 
     @Test
-    fun `simulate logical port AND, with STEP`() {
+    fun `train to simulate a logical port and AND, with STEP`() {
 
         // given
         neuron = Neuron.random(
@@ -58,7 +58,7 @@ class NeuronTest {
     }
 
     @Test
-    fun `simulate logical port OR, with STEP`() {
+    fun `train to simulate a logical port OR, with STEP`() {
 
         // given
         neuron = Neuron.random(
@@ -109,7 +109,7 @@ class NeuronTest {
     }
 
     @Test
-    fun `simulate logical port AND, with SIGMOID`() {
+    fun `train to simulate a logical port AND, with SIGMOID`() {
 
         // given
         neuron = Neuron.random(
@@ -160,7 +160,7 @@ class NeuronTest {
     }
 
     @Test
-    fun `simulate logical port OR, with SIGMOID`() {
+    fun `train to simulate a logical port OR, with SIGMOID`() {
 
         // given
         neuron = Neuron.random(
@@ -178,6 +178,108 @@ class NeuronTest {
             ),
             expectedOutputs = arrayOf(0.0, 1.0, 1.0, 1.0),
             epochs = 100,
+        )
+
+        // testing
+        run {
+            // 0 or 0 = 0
+            val outputs = neuron.activation(doubleArrayOf(0.0, 0.0))
+
+            assertEquals(0.0, outputs.round())
+        }
+
+        run {
+            // 0 or 1 = 1
+            val outputs = neuron.activation(doubleArrayOf(0.0, 1.0))
+
+            assertEquals(1.0, outputs.round())
+        }
+
+        run {
+            // 1 or 0 = 1
+            val output = neuron.activation(doubleArrayOf(1.0, 0.0))
+
+            assertEquals(1.0, output.round())
+        }
+
+        run {
+            // 1 or 1 = 1
+            val outputs = neuron.activation(doubleArrayOf(1.0, 1.0))
+
+            assertEquals(1.0, outputs.round())
+        }
+    }
+
+    @Test
+    fun `train to simulate a logical port AND, with RELU`() {
+
+        // given
+        neuron = Neuron.random(
+            weights = 2,
+            activation = Neuron.Activation.RELU
+        )
+
+        // training
+        neuron.train(
+            inputs = arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(0.0, 1.0),
+                doubleArrayOf(1.0, 0.0),
+                doubleArrayOf(1.0, 1.0),
+            ),
+            expectedOutputs = arrayOf(0.0, 0.0, 0.0, 1.0),
+            epochs = 10,
+        )
+
+        // testing
+        run {
+            // 0 and 0 = 0
+            val output = neuron.activation(doubleArrayOf(0.0, 0.0))
+
+            assertEquals(0.0, output.round())
+        }
+
+        run {
+            // 0 and 1 = 0
+            val outputs = neuron.activation(doubleArrayOf(0.0, 1.0))
+
+            assertEquals(0.0, outputs.round())
+        }
+
+        run {
+            // 1 and 0 = 0
+            val output = neuron.activation(doubleArrayOf(1.0, 0.0))
+
+            assertEquals(0.0, output.round())
+        }
+
+        run {
+            // 1 and 1 = 1
+            val outputs = neuron.activation(doubleArrayOf(1.0, 1.0))
+
+            assertEquals(1.0, outputs.round())
+        }
+    }
+
+    @Test
+    fun `train to simulate a logical port OR, with RELU`() {
+
+        // given
+        neuron = Neuron.random(
+            weights = 2,
+            activation = Neuron.Activation.RELU
+        )
+
+        // training
+        neuron.train(
+            inputs = arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(0.0, 1.0),
+                doubleArrayOf(1.0, 0.0),
+                doubleArrayOf(1.0, 1.0),
+            ),
+            expectedOutputs = arrayOf(0.0, 1.0, 1.0, 1.0),
+            epochs = 10,
         )
 
         // testing
