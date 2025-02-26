@@ -5,12 +5,16 @@ import kotlin.math.exp
  */
 class Neuron(
     val weights: DoubleArray = DoubleArray(size = 0),
-    var bias: Double = 0.0,
-    val activation: Activation = Activation.SIGMOID
+    val activation: Activation = Activation.SIGMOID,
+    var bias: Double = 0.0
 ) {
     fun activation(
         inputs: DoubleArray
     ): Double {
+
+        require(inputs.size == weights.size) {
+            "Input size must match weights size"
+        }
 
         val weightedSum = inputs
             .zip(weights)
@@ -25,7 +29,7 @@ class Neuron(
 
     enum class Activation {
         SIGMOID, // Probability
-        RELU,
+        RELU, // Deep learning
         STEP // Boolean
     }
 
