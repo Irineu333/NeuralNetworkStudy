@@ -10,10 +10,21 @@ class NeuronTest {
     fun `simulate logical port AND, with STEP`() {
 
         // given
-        neuron = Neuron(
-            weights = doubleArrayOf(1.0, 1.0),
-            bias = -1.5,
+        neuron = Neuron.random(
+            weights = 2,
             activation = Neuron.Activation.STEP
+        )
+
+        // training
+        neuron.train(
+            inputs = arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(0.0, 1.0),
+                doubleArrayOf(1.0, 0.0),
+                doubleArrayOf(1.0, 1.0),
+            ),
+            expectedOutputs = arrayOf(0.0, 0.0, 0.0, 1.0),
+            epochs = 10,
         )
 
         // testing
@@ -50,10 +61,21 @@ class NeuronTest {
     fun `simulate logical port OR, with STEP`() {
 
         // given
-        neuron = Neuron(
-            weights = doubleArrayOf(1.0, 1.0),
-            bias = -0.5,
+        neuron = Neuron.random(
+            weights = 2,
             activation = Neuron.Activation.STEP
+        )
+
+        // training
+        neuron.train(
+            inputs = arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(0.0, 1.0),
+                doubleArrayOf(1.0, 0.0),
+                doubleArrayOf(1.0, 1.0),
+            ),
+            expectedOutputs = arrayOf(0.0, 1.0, 1.0, 1.0),
+            epochs = 10,
         )
 
         // testing
@@ -90,10 +112,21 @@ class NeuronTest {
     fun `simulate logical port AND, with SIGMOID`() {
 
         // given
-        neuron = Neuron(
-            weights = doubleArrayOf(2.0, 2.0),
-            bias = -3.0,
+        neuron = Neuron.random(
+            weights = 2,
             activation = Neuron.Activation.SIGMOID
+        )
+
+        // training
+        neuron.train(
+            inputs = arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(0.0, 1.0),
+                doubleArrayOf(1.0, 0.0),
+                doubleArrayOf(1.0, 1.0),
+            ),
+            expectedOutputs = arrayOf(0.0, 0.0, 0.0, 1.0),
+            epochs = 100,
         )
 
         // testing
@@ -130,10 +163,21 @@ class NeuronTest {
     fun `simulate logical port OR, with SIGMOID`() {
 
         // given
-        neuron = Neuron(
-            weights = doubleArrayOf(2.0, 2.0),
-            bias = -1.0,
+        neuron = Neuron.random(
+            weights = 2,
             activation = Neuron.Activation.SIGMOID
+        )
+
+        // training
+        neuron.train(
+            inputs = arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(0.0, 1.0),
+                doubleArrayOf(1.0, 0.0),
+                doubleArrayOf(1.0, 1.0),
+            ),
+            expectedOutputs = arrayOf(0.0, 1.0, 1.0, 1.0),
+            epochs = 100,
         )
 
         // testing
@@ -165,4 +209,43 @@ class NeuronTest {
             assertEquals(1.0, outputs.round())
         }
     }
+}
+
+private fun Neuron.train(
+    inputs: Array<DoubleArray>,
+    expectedOutputs: Array<Double>,
+    epochs: Int,
+    learningRate: Double = 0.1,
+) {
+    repeat(epochs) {
+        inputs
+            .zip(expectedOutputs)
+            .forEach { (input, expectedOutput) ->
+                train(
+                    inputs = input,
+                    expectedOutput = expectedOutput,
+                    learningRate = learningRate
+                )
+            }
+    }
+}
+
+private fun Neuron.train(
+    inputs: DoubleArray,
+    expectedOutput: Double,
+    learningRate: Double
+) {
+    // Forward
+    val calculatedOutput = activation(inputs)
+
+    // Calculate the error
+    val error = expectedOutput - calculatedOutput
+
+    // Update weights
+    inputs.forEachIndexed { index, input ->
+        weights[index] += learningRate * error * input
+    }
+
+    // Update bias
+    bias += learningRate * error
 }
