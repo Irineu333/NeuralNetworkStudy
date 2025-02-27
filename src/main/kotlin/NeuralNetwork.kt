@@ -73,8 +73,8 @@ class NeuralNetwork(
 
                 val derivative = when (neuron.activation) {
                     Neuron.Activation.SIGMOID -> output * (1 - output)
-                    Neuron.Activation.RELU -> if (output > 0) 1.0 else 0.0
-                    Neuron.Activation.STEP -> 1.0 // Approximation
+                    Neuron.Activation.RELU -> if (output > 0) 1.0 else 0.01 // Leaky ReLU
+                    Neuron.Activation.STEP -> error("Does not support backpropagation")
                 }
 
                 val delta = error * derivative
