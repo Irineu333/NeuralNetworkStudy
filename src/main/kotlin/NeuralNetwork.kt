@@ -2,9 +2,14 @@ class NeuralNetwork(
     private val layers: Array<Layer>
 ) {
 
+    private val inputLayers get() = layers.first()
+    private val hiddenLayers get() = layers.drop(n = 1).dropLast(n = 1)
+    private val outputLayers get() = layers.last()
+    private val actionableLayers get() = layers.drop(n = 1)
+
     init {
         require(layers.size > 1) {
-            "Requires input and exit"
+            "Requires input and output layers"
         }
     }
 
@@ -14,17 +19,11 @@ class NeuralNetwork(
             "Input must correspond to the input layer"
         }
 
-        var current = inputs
-
-        layers
-            .drop(n = 1) // drop input layer
-            .forEach { layer ->
-                current = layer.neurons.map {
-                    it.activation(current)
-                }
+        return actionableLayers.fold(inputs) { input, layer ->
+            layer.neurons.map {
+                it.activation(input)
             }
-
-        return current
+        }
     }
 
     fun train(
@@ -32,76 +31,58 @@ class NeuralNetwork(
         expectedOutput: DoubleArray,
         learningRate: Double = 0.1,
     ) {
-        val layers = layers.drop(n = 1)
-
         // Forward
         val resultsByLayer = mutableListOf(inputs)
 
-        var current = inputs
-
-        layers.forEach { layer ->
-            current = layer.neurons.map {
-                it.activation(current)
+        actionableLayers.fold(inputs) { currentInput, layer ->
+            layer.neurons.map {
+                it.activation(currentInput)
+            }.also {
+                resultsByLayer.add(it)
             }
-
-            resultsByLayer.add(current)
         }
 
         // Calculate output layer errors
-        val outputLayerErrors = resultsByLayer.last().let {
-            DoubleArray(it.size).apply {
-                it.forEachIndexed { index, result ->
-                    this[index] = expectedOutput[index] - result
-                }
-            }
+        val outputLayerErrors = DoubleArray(outputLayers.neurons.size) { index ->
+            expectedOutput[index] - resultsByLayer.last()[index]
         }
 
-        // Backward
+        // Backpropagation
         val errorsByLayer = mutableListOf(outputLayerErrors)
 
-        for ((layer, nextLayer) in layers.zipWithNext().reversed()) {
-            val errorsByNeuron = errorsByLayer.first()
-            val errors = DoubleArray(layer.neurons.size)
+        actionableLayers.zipWithNext().reversed().forEach { (layer, nextLayer) ->
+            val currentErrors = errorsByLayer.first()
 
-            for (neuronIndex in layer.neurons.indices) {
-                for (nextNeuronIndex in nextLayer.neurons.indices) {
-                    val nextLayerNeuron = nextLayer.neurons[nextNeuronIndex]
-                    val nextLayerWeight = nextLayerNeuron.weights[neuronIndex]
-
-                    errors[neuronIndex] += errorsByNeuron[nextNeuronIndex] * nextLayerWeight
+            val layerErrors = DoubleArray(layer.neurons.size) { neuronIndex ->
+                nextLayer.neurons.indices.sumOf { nextNeuronIndex ->
+                    currentErrors[nextNeuronIndex] * nextLayer.neurons[nextNeuronIndex].weights[neuronIndex]
                 }
             }
 
-            errorsByLayer.add(index = 0, errors)
+            errorsByLayer.add(index = 0, layerErrors)
         }
 
         // Update weights and biases
-        for ((layerIndex, layer) in layers.withIndex()) {
+        actionableLayers.forEachIndexed { layerIndex, layer ->
+            val errors = errorsByLayer[layerIndex]
+            val outputs = resultsByLayer[layerIndex + 1]
 
-            val errorsByNeuron = errorsByLayer[layerIndex]
+            layer.neurons.forEachIndexed { neuronIndex, neuron ->
+                val error = errors[neuronIndex]
+                val output = outputs[neuronIndex]
 
-            for (neuronIndex in layer.neurons.indices) {
-
-                val neuron = layer.neurons[neuronIndex]
-                val output = resultsByLayer[layerIndex + 1][neuronIndex]
-
-                // Calculate derivative of activation function
                 val derivative = when (neuron.activation) {
                     Neuron.Activation.SIGMOID -> output * (1 - output)
                     Neuron.Activation.RELU -> if (output > 0) 1.0 else 0.0
                     Neuron.Activation.STEP -> 1.0 // Approximation
                 }
 
-                val delta = errorsByNeuron[neuronIndex] * derivative
+                val delta = error * derivative
 
-                val resultsByNeuron = resultsByLayer[layerIndex]
-
-                // Update weights
-                resultsByNeuron.withIndex().forEach { (index, result) ->
-                    neuron.weights[index] += learningRate * delta * result
+                resultsByLayer[layerIndex].forEachIndexed { inputIndex, input ->
+                    neuron.weights[inputIndex] += learningRate * delta * input
                 }
 
-                // Update bias
                 neuron.bias += learningRate * delta
             }
         }
