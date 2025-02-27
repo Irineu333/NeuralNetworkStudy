@@ -5,7 +5,7 @@ class NeuralNetwork(
     private val inputLayers get() = layers.first()
     private val hiddenLayers get() = layers.drop(n = 1).dropLast(n = 1)
     private val outputLayers get() = layers.last()
-    private val actionableLayers get() = layers.drop(n = 1)
+    private val activationLayers get() = layers.drop(n = 1)
 
     init {
         require(layers.size > 1) {
@@ -19,7 +19,7 @@ class NeuralNetwork(
             "Input must correspond to the input layer"
         }
 
-        return actionableLayers.fold(inputs) { input, layer ->
+        return activationLayers.fold(inputs) { input, layer ->
             layer.neurons.map {
                 it.activation(input)
             }
@@ -34,7 +34,7 @@ class NeuralNetwork(
         // Forward
         val resultsByLayer = mutableListOf(inputs)
 
-        actionableLayers.fold(inputs) { currentInput, layer ->
+        activationLayers.fold(inputs) { currentInput, layer ->
             layer.neurons.map {
                 it.activation(currentInput)
             }.also {
@@ -42,20 +42,19 @@ class NeuralNetwork(
             }
         }
 
-        // Calculate output layer errors
+        // Backpropagation
         val outputLayerErrors = DoubleArray(outputLayers.neurons.size) { index ->
             expectedOutput[index] - resultsByLayer.last()[index]
         }
 
-        // Backpropagation
         val errorsByLayer = mutableListOf(outputLayerErrors)
 
-        actionableLayers.zipWithNext().reversed().forEach { (layer, nextLayer) ->
+        activationLayers.zipWithNext().reversed().forEach { (layer, nextLayer) ->
             val currentErrors = errorsByLayer.first()
 
             val layerErrors = DoubleArray(layer.neurons.size) { neuronIndex ->
-                nextLayer.neurons.indices.sumOf { nextNeuronIndex ->
-                    currentErrors[nextNeuronIndex] * nextLayer.neurons[nextNeuronIndex].weights[neuronIndex]
+                nextLayer.neurons.withIndex().sumOf { (index, neuron) ->
+                    currentErrors[index] * neuron.weights[neuronIndex]
                 }
             }
 
@@ -63,7 +62,7 @@ class NeuralNetwork(
         }
 
         // Update weights and biases
-        actionableLayers.forEachIndexed { layerIndex, layer ->
+        activationLayers.forEachIndexed { layerIndex, layer ->
             val errors = errorsByLayer[layerIndex]
             val outputs = resultsByLayer[layerIndex + 1]
 
@@ -74,15 +73,17 @@ class NeuralNetwork(
                 val derivative = when (neuron.activation) {
                     Neuron.Activation.SIGMOID -> output * (1 - output)
                     Neuron.Activation.RELU -> if (output > 0) 1.0 else 0.01 // Leaky ReLU
-                    Neuron.Activation.STEP -> error("Does not support backpropagation")
+                    else -> error("Does not support backpropagation")
                 }
 
                 val delta = error * derivative
 
+                // Update weights
                 resultsByLayer[layerIndex].forEachIndexed { inputIndex, input ->
                     neuron.weights[inputIndex] += learningRate * delta * input
                 }
 
+                // Update bias
                 neuron.bias += learningRate * delta
             }
         }
