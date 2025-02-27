@@ -8,62 +8,26 @@ class NeuralNetworkTest {
     fun `simulate logical port XOR`() {
 
         // given
+        val neuralNetwork = NeuralNetwork.create(2, 4, 1)
 
-        val inputLayer = NeuralNetwork.Layer(neurons = Array(2) { Neuron() })
-
-        val hiddenLayer = NeuralNetwork.Layer(
-            neurons = arrayOf(
-                Neuron(
-                    bias = 1.3851242885537485,
-                    weights = doubleArrayOf(
-                        -0.34281371276528644,
-                        -0.5962433104446242
-                    )
-                ),
-                Neuron(
-                    bias = 2.8474964898137056,
-                    weights = doubleArrayOf(
-                        5.5597694337117805,
-                        -5.497819094902079
-                    )
-                ),
-                Neuron(
-                    bias = -1.3181452901046906,
-                    weights = doubleArrayOf(
-                        1.7858333842169294,
-                        -1.5281806427286417
-                    )
-                ),
-                Neuron(
-                    bias = -2.5632916201118467,
-                    weights = doubleArrayOf(
-                        4.5726559437031185,
-                        -4.694734199962801
-                    )
-                )
-            )
-        )
-
-        val outputLayer = NeuralNetwork.Layer(
-            neurons = Array(1) {
-                Neuron(
-                    bias = 2.4757123239361394,
-                    weights = doubleArrayOf(
-                        1.196265565534793,
-                        -7.837060755046451,
-                        2.367324599340193,
-                        6.9315813360259115
-                    )
-                )
-            }
-        )
-
-        val neuralNetwork = NeuralNetwork(
-            layers = arrayOf(inputLayer, hiddenLayer, outputLayer),
+        // training
+        neuralNetwork.train(
+            inputs = arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(0.0, 1.0),
+                doubleArrayOf(1.0, 0.0),
+                doubleArrayOf(1.0, 1.0),
+            ),
+            expectedOutputs = arrayOf(
+                doubleArrayOf(0.0),
+                doubleArrayOf(1.0),
+                doubleArrayOf(1.0),
+                doubleArrayOf(0.0)
+            ),
+            epochs = 10_000,
         )
 
         // testing
-
         run {
             // 0 xor 0 = 0
             val outputs = neuralNetwork.forward(doubleArrayOf(0.0, 0.0))
@@ -91,5 +55,24 @@ class NeuralNetworkTest {
 
             assertEquals(0.0, outputs.single().round())
         }
+    }
+}
+
+private fun NeuralNetwork.train(
+    inputs: Array<DoubleArray>,
+    expectedOutputs: Array<DoubleArray>,
+    epochs: Int,
+    learningRate: Double = 0.1,
+) {
+    repeat(epochs) {
+        inputs
+            .zip(expectedOutputs)
+            .forEach { (input, expectedOutput) ->
+                train(
+                    inputs = input,
+                    expectedOutput = expectedOutput,
+                    learningRate = learningRate
+                )
+            }
     }
 }
